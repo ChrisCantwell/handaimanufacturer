@@ -6,6 +6,33 @@ This project follows a practical changelog style: concise release notes, plus en
 
 ## [Unreleased]
 
+### Planned
+
+- Job log file browser links.
+- Better OrcaSlicer profile handling.
+- Camera preview groundwork.
+
+## [0.1.1] - 2026-07-06
+
+### Added
+
+- Version indicator in the application header.
+- Package and FastAPI application version bumped to `0.1.1`.
+- Last Operation card showing recent job status, source STL, generated G-code, printer destination, and job ID.
+- Job detail pages at `/jobs/{job_id}` with artifacts, metadata, and event logs.
+- Manual printer status refresh link.
+- Human-readable printer file sizes.
+- Printer-file Use buttons that populate the Start Print filename field.
+- Selected-file display in the Start Print card.
+
+### Changed
+
+- Recent jobs are now clickable.
+- Printer G-code list filters to `.gcode` files and attempts to sort newest first when timestamp metadata is available.
+- Slice/upload redirects carry job IDs so the dashboard can summarize what just happened.
+
+## [0.1.0] - 2026-07-06
+
 ### Added
 
 - Initial FastAPI application package.
