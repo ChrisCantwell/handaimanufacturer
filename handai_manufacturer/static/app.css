@@ -10,8 +10,12 @@ body {
 }
 
 header {
+  align-items: center;
   background: #202020;
   color: white;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1.5rem 2rem;
 }
 
@@ -22,6 +26,15 @@ header h1 {
 header p {
   margin: 0;
   opacity: 0.85;
+}
+
+.version-badge {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
 }
 
 .notice {
@@ -58,6 +71,15 @@ main {
   padding: 1rem;
 }
 
+.single-column {
+  display: block;
+  max-width: 1100px;
+}
+
+.single-column .card {
+  margin-bottom: 1rem;
+}
+
 .card {
   background: white;
   border: 1px solid #d8d8d0;
@@ -68,6 +90,10 @@ main {
 
 .card h2 {
   margin-top: 0;
+}
+
+.latest-job-card {
+  border-color: #7b8bb5;
 }
 
 .warning {
@@ -109,19 +135,51 @@ select {
   padding: 0.55rem;
 }
 
-button {
+button,
+.button-link {
   background: #202020;
   border: 0;
   border-radius: 8px;
   color: white;
   cursor: pointer;
+  display: inline-block;
   font: inherit;
   font-weight: 700;
   padding: 0.65rem 1rem;
+  text-decoration: none;
 }
 
-button:hover {
+button:hover,
+.button-link:hover {
   background: #404040;
+}
+
+.small-button {
+  padding: 0.3rem 0.5rem;
+}
+
+.button-row,
+.action-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.selected-control {
+  background: #247a24;
+}
+
+.selected-file-display {
+  background: #f7f7f4;
+  border-radius: 8px;
+  font-weight: 650;
+  padding: 0.6rem;
+}
+
+.selected-file-display.selected {
+  background: #ecf8ed;
 }
 
 dl {
@@ -136,12 +194,22 @@ dt {
 
 dd {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 code {
   background: #f0f0ec;
   border-radius: 4px;
   padding: 0.1rem 0.25rem;
+}
+
+pre {
+  background: #161616;
+  border-radius: 8px;
+  color: #f2f2f2;
+  overflow-x: auto;
+  padding: 1rem;
+  white-space: pre-wrap;
 }
 
 .ok {
@@ -203,10 +271,6 @@ td {
   width: 4rem;
 }
 
-.printer-files-table input[type="radio"] {
-  cursor: pointer;
-}
-
 .file-path code {
   display: inline-block;
   max-width: 100%;
@@ -218,6 +282,11 @@ td {
 }
 
 @media (max-width: 900px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .printer-files-card {
     grid-column: span 1;
   }
