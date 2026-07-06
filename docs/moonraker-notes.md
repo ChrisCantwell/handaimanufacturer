@@ -16,11 +16,11 @@ Moonraker is the first planned printer-control adapter for HandAIManufacturer.
 ```yaml
 printer:
   type: moonraker
-  name: Ender-3 V3
-  url: http://192.168.1.188:7125
+  name: Example Moonraker Printer
+  url: http://PRINTER-IP-HERE:7125
 ```
 
-The example IP is from the original development machine and must not be hardcoded in application source.
+Use the printer's actual Moonraker URL only in `config.local.yaml` or another local-only configuration file.
 
 ## Useful endpoint categories
 
@@ -45,8 +45,8 @@ Suggested metadata for Moonraker interactions:
 
 ```json
 {
-  "printer_name": "Ender-3 V3",
-  "printer_url_redacted": "http://192.168.1.188:7125",
+  "printer_name": "Example Moonraker Printer",
+  "printer_url_redacted": "http://PRINTER-IP-HERE:7125",
   "action": "upload_gcode",
   "request_time": "...",
   "response_time": "...",
@@ -62,8 +62,8 @@ Printer configuration should be list-based eventually, even if v0.1 supports onl
 
 ```yaml
 printers:
-  - id: ender3v3
+  - id: printer-1
     type: moonraker
-    name: Ender-3 V3
-    url: http://192.168.1.188:7125
+    name: Example Moonraker Printer
+    url: http://PRINTER-IP-HERE:7125
 ```
