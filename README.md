@@ -40,6 +40,16 @@ See [`docs/roadmap.md`](docs/roadmap.md) for the working roadmap.
 
 This repository is in planning/scaffolding stage. Expect the design to evolve quickly.
 
+## License
+
+HandAIManufacturer is released under the MIT License. See [`LICENSE`](LICENSE).
+
+## Contributing
+
+Discussion, issues, compatibility notes, and safety feedback are welcome.
+
+Pull requests may not be accepted until a formal contribution policy is finalized. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Safety note
 
 This project is intended to control equipment that can move, heat up, and run unattended if misconfigured. Do not expose the app directly to the public internet. Auto-start printing should remain disabled unless the operator deliberately enables it.
