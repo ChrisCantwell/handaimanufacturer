@@ -1,6 +1,6 @@
 # HandAIManufacturer example configuration
 # Copy to config.local.yaml for local development.
-# Do not commit real secrets, tokens, camera credentials, or private URLs.
+# Do not commit real secrets, tokens, camera credentials, private URLs, or local network details.
 
 server:
   host: 127.0.0.1
@@ -13,8 +13,8 @@ app:
 
 printer:
   type: moonraker
-  name: Ender-3 V3
-  url: http://192.168.1.188:7125
+  name: Example Moonraker Printer
+  url: http://PRINTER-IP-HERE:7125
   auto_start_after_upload: false
 
 slicer:
