@@ -8,8 +8,11 @@
   </head>
   <body>
     <header>
-      <h1>HandAIManufacturer</h1>
-      <p>Local print dock for OrcaSlicer and Moonraker workflows.</p>
+      <div>
+        <h1>HandAIManufacturer</h1>
+        <p>Local print dock for OrcaSlicer and Moonraker workflows.</p>
+      </div>
+      <span class="version-badge">v{{ app_version }}</span>
     </header>
 
     {% if notice %}
@@ -48,7 +51,32 @@
             <div><span>Bed</span><strong>{{ bed.temperature|default('?') }} / {{ bed.target|default('?') }} °C</strong></div>
           </div>
         {% endif %}
+        <p class="action-row"><a class="button-link" href="/">Refresh printer status</a></p>
       </section>
+
+      {% if latest_job %}
+        <section class="card latest-job-card">
+          <h2>Last Operation</h2>
+          <dl>
+            <dt>Status</dt>
+            <dd><strong>{{ latest_job.status }}</strong></dd>
+            <dt>Source</dt>
+            <dd>{{ latest_job.source_stl|default(latest_job.label, true) }}</dd>
+            <dt>Generated G-code</dt>
+            <dd>{{ latest_job.generated_gcode|default('—', true) }}</dd>
+            <dt>Printer destination</dt>
+            <dd>{{ latest_job.remote_name|default('—', true) }}</dd>
+            <dt>Job ID</dt>
+            <dd><a href="/jobs/{{ latest_job.id }}"><code>{{ latest_job.id }}</code></a></dd>
+          </dl>
+          <div class="button-row">
+            <a class="button-link" href="/jobs/{{ latest_job.id }}">View job details</a>
+            {% if latest_job.startable_filename %}
+              <button type="button" data-use-gcode="{{ latest_job.startable_filename|e }}">Use this for Start Print</button>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
 
       <section class="card">
         <h2>Slice STL</h2>
@@ -91,6 +119,7 @@
       <section class="card warning" id="start-print-card">
         <h2>Start Print</h2>
         <p>Starting a print is intentionally separate from slicing/uploading.</p>
+        <p id="selected-file-display" class="selected-file-display">No printer file selected yet.</p>
         {% if gcodes %}
           <label>
             Choose from printer files
@@ -125,20 +154,19 @@
           <p class="bad">Could not list files: {{ gcode_error }}</p>
         {% elif gcodes %}
           <table class="printer-files-table">
-            <thead><tr><th>Select</th><th>Path</th><th>Size</th></tr></thead>
+            <thead><tr><th>Use</th><th>Path</th><th>Size</th></tr></thead>
             <tbody>
               {% for file in gcodes %}
                 <tr>
                   <td>
-                    <input
-                      type="radio"
-                      name="printer_file_choice"
-                      value="{{ file.path|e }}"
+                    <button
+                      type="button"
+                      class="small-button"
                       data-use-gcode="{{ file.path|e }}"
-                      aria-label="Use {{ file.path }} for Start Print">
+                      aria-label="Use {{ file.path }} for Start Print">Use</button>
                   </td>
                   <td class="file-path"><code>{{ file.path }}</code></td>
-                  <td class="file-size">{{ file.size }}</td>
+                  <td class="file-size">{{ file.human_size|default(file.size, true) }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -156,7 +184,7 @@
             <tbody>
               {% for job in jobs %}
                 <tr>
-                  <td><code>{{ job.id }}</code></td>
+                  <td><a href="/jobs/{{ job.id }}"><code>{{ job.id }}</code></a></td>
                   <td>{{ job.status }}</td>
                   <td>{{ job.created_at }}</td>
                 </tr>
@@ -172,10 +200,18 @@
     <script>
       function setStartFile(filename) {
         const input = document.getElementById("start-filename");
+        const display = document.getElementById("selected-file-display");
         if (!input || !filename) {
           return;
         }
         input.value = filename;
+        if (display) {
+          display.textContent = "Selected file: " + filename;
+          display.classList.add("selected");
+        }
+        document.querySelectorAll("[data-use-gcode]").forEach((control) => {
+          control.classList.toggle("selected-control", control.dataset.useGcode === filename);
+        });
         const card = document.getElementById("start-print-card");
         if (card) {
           card.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -184,7 +220,6 @@
       }
 
       document.querySelectorAll("[data-use-gcode]").forEach((control) => {
-        control.addEventListener("change", () => setStartFile(control.dataset.useGcode));
         control.addEventListener("click", () => setStartFile(control.dataset.useGcode));
       });
 
