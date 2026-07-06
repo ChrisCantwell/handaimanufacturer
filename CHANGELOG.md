@@ -8,21 +8,29 @@ This project follows a practical changelog style: concise release notes, plus en
 
 ### Added
 
-- Initial project definition for HandAIManufacturer.
-- Local-first manufacturing workflow goals.
-- Staged roadmap for slicer/upload/library/camera/AI integration.
-- Safety-first default posture for print start actions.
+- Initial FastAPI application package.
+- Local dashboard template and CSS.
+- Configuration loader using `config.local.yaml`, `HANDAI_CONFIG`, or defaults.
+- Job folder creation with `job.json` metadata and event logging.
+- Moonraker adapter for status, file listing, G-code upload, and start/pause/resume/cancel methods.
+- OrcaSlicer CLI adapter for STL slicing attempts with stdout/stderr capture.
+- Explicit print-start confirmation route.
 
-### Planned
+### Known limitations
 
-- v0.1 Local Print Dock.
-- OrcaSlicer CLI adapter.
-- Moonraker printer adapter.
-- Job folder and log format.
-- Basic local web dashboard.
+- OrcaSlicer profile JSONs are not yet included.
+- Slicing behavior depends on local OrcaSlicer CLI/profile setup.
+- Camera support is documented but not implemented.
+- AI provider layer is documented but not implemented.
+- No automated tests yet.
 
 ## [0.0.0] - 2026-07-05
 
 ### Added
 
 - Repository initialized with planning documentation.
+- MIT license.
+- Early-stage contribution policy.
+- Local-first manufacturing workflow goals.
+- Staged roadmap for slicer/upload/library/camera/AI integration.
+- Safety-first default posture for print start actions.
