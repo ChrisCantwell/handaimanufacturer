@@ -1,0 +1,52 @@
+# HandAIManufacturer example configuration
+# Copy to config.local.yaml for local development.
+# Do not commit real secrets, tokens, camera credentials, or private URLs.
+
+server:
+  host: 127.0.0.1
+  port: 8765
+  debug: false
+
+app:
+  data_dir: ~/.local/share/handai-manufacturer
+  log_level: info
+
+printer:
+  type: moonraker
+  name: Ender-3 V3
+  url: http://192.168.1.188:7125
+  auto_start_after_upload: false
+
+slicer:
+  type: orca
+  executable: orcaslicer
+  datadir: null
+  profiles_dir: ./profiles
+  default_profile: ender3v3-pla-020
+
+profiles:
+  ender3v3-pla-020:
+    label: Ender-3 V3 / PLA / 0.20 mm
+    printer: profiles/printers/creality-ender-3-v3-0.4.json
+    process: profiles/processes/pla-0.20-standard.json
+    filament: profiles/filaments/hyper-pla-white.json
+
+cameras:
+  - id: printer-cam
+    name: Printer Cam
+    type: rtsp
+    enabled: false
+    url: rtsp://username:password@example.local:554/stream1
+
+ai:
+  enabled: false
+  provider: null
+  codex_cli:
+    executable: codex
+    auth_mode: external
+    workspace_dir: ~/.local/share/handai-manufacturer/ai-workspaces
+
+safety:
+  require_start_confirmation: true
+  require_bed_clear_confirmation: true
+  allow_arbitrary_gcode: false
