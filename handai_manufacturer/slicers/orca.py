@@ -42,13 +42,19 @@ def _resolve_existing(path_value: str | Path | None, base_dir: Path) -> Path | N
     return path.resolve()
 
 
+def _profile_base_dir(config: Config) -> Path:
+    if config.source_path:
+        return config.source_path.expanduser().resolve().parent
+    return Path.cwd()
+
+
 def _profile_paths(config: Config, profile_id: str | None) -> tuple[list[Path], list[Path], list[str]]:
     messages: list[str] = []
     if not profile_id:
         profile_id = config.slicer.default_profile
 
     profile = config.profiles.get(profile_id, {})
-    base_dir = Path.cwd()
+    base_dir = _profile_base_dir(config)
     settings: list[Path] = []
     filaments: list[Path] = []
 
