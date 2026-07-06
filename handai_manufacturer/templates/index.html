@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HandAIManufacturer</title>
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body>
+    <header>
+      <h1>HandAIManufacturer</h1>
+      <p>Local print dock for OrcaSlicer and Moonraker workflows.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>Printer</h2>
+        <dl>
+          <dt>Name</dt>
+          <dd>{{ config.printer.name }}</dd>
+          <dt>URL</dt>
+          <dd><code>{{ config.printer.url }}</code></dd>
+          <dt>Status</dt>
+          <dd>
+            {% if printer_status.ok %}
+              <strong class="ok">Reachable</strong>
+            {% else %}
+              <strong class="bad">Not reachable</strong> — {{ printer_status.error }}
+            {% endif %}
+          </dd>
+        </dl>
+
+        {% if printer_status.ok %}
+          {% set objects = printer_status.objects.status if printer_status.objects.status is defined else {} %}
+          {% set print_stats = objects.print_stats if objects.print_stats is defined else {} %}
+          {% set extruder = objects.extruder if objects.extruder is defined else {} %}
+          {% set bed = objects.heater_bed if objects.heater_bed is defined else {} %}
+          <div class="status-grid">
+            <div><span>Print state</span><strong>{{ print_stats.state|default('unknown') }}</strong></div>
+            <div><span>File</span><strong>{{ print_stats.filename|default('') }}</strong></div>
+            <div><span>Nozzle</span><strong>{{ extruder.temperature|default('?') }} / {{ extruder.target|default('?') }} °C</strong></div>
+            <div><span>Bed</span><strong>{{ bed.temperature|default('?') }} / {{ bed.target|default('?') }} °C</strong></div>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>Slice STL</h2>
+        <form action="/slice-stl" method="post" enctype="multipart/form-data">
+          <label>
+            STL file
+            <input type="file" name="stl_file" accept=".stl" required>
+          </label>
+          <label>
+            Profile ID
+            <input type="text" name="profile_id" value="{{ config.slicer.default_profile }}">
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="upload_to_printer" value="true">
+            Upload generated G-code to printer if slicing produces a plain .gcode file
+          </label>
+          <button type="submit">Slice</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Upload Existing G-code</h2>
+        <form action="/upload-gcode" method="post" enctype="multipart/form-data">
+          <label>
+            G-code file
+            <input type="file" name="gcode_file" accept=".gcode" required>
+          </label>
+          <button type="submit">Upload to Printer</button>
+        </form>
+      </section>
+
+      <section class="card warning">
+        <h2>Start Print</h2>
+        <p>Starting a print is intentionally separate from slicing/uploading.</p>
+        <form action="/start-print" method="post">
+          <label>
+            G-code filename on printer
+            <input type="text" name="filename" placeholder="example.gcode" required>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="bed_clear_confirmed" value="true" required>
+            I confirm the bed is clear
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" name="filament_confirmed" value="true" required>
+            I confirm the correct filament is loaded and the path is clear
+          </label>
+          <button type="submit">Start Print</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Printer G-code Files</h2>
+        {% if gcode_error %}
+          <p class="bad">Could not list files: {{ gcode_error }}</p>
+        {% elif gcodes %}
+          <table>
+            <thead><tr><th>Path</th><th>Size</th></tr></thead>
+            <tbody>
+              {% for file in gcodes %}
+                <tr>
+                  <td><code>{{ file.path }}</code></td>
+                  <td>{{ file.size }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>No G-code files reported by printer.</p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>Recent Jobs</h2>
+        {% if jobs %}
+          <table>
+            <thead><tr><th>Job</th><th>Status</th><th>Created</th></tr></thead>
+            <tbody>
+              {% for job in jobs %}
+                <tr>
+                  <td><code>{{ job.id }}</code></td>
+                  <td>{{ job.status }}</td>
+                  <td>{{ job.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p>No jobs yet.</p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
