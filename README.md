@@ -15,6 +15,42 @@ The long-term goal is more ambitious: a local manufacturing notebook with part h
 - **Auditable source over mystery meshes.** AI-designed parts should preserve editable CAD source, prompts, measurements, generated STL, sliced G-code, and fit notes.
 - **Boring logs beat heroic memory.** Every slice/upload/print attempt should leave enough detail to diagnose failures later.
 
+## First version
+
+The first runnable version provides a local dashboard that can:
+
+- Query Moonraker printer status.
+- List G-code files already on the printer.
+- Upload an STL and attempt to slice it with OrcaSlicer CLI.
+- Save slice logs and job metadata.
+- Upload an existing `.gcode` file to Moonraker.
+- Start a selected printer file only after explicit bed-clear and filament confirmations.
+
+This is still early software. Expect rough edges, especially around OrcaSlicer profile export and generated G-code discovery.
+
+## Quick start
+
+```bash
+git clone https://github.com/ChrisCantwell/handaimanufacturer.git
+cd handaimanufacturer
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cp config.example.yaml config.local.yaml
+```
+
+Edit `config.local.yaml` for your printer URL and slicer executable, then run:
+
+```bash
+handai-manufacturer
+```
+
+Open:
+
+```text
+http://127.0.0.1:8765
+```
+
 ## Initial target stack
 
 - Python backend, likely FastAPI
@@ -38,7 +74,7 @@ See [`docs/roadmap.md`](docs/roadmap.md) for the working roadmap.
 
 ## Status
 
-This repository is in planning/scaffolding stage. Expect the design to evolve quickly.
+This repository is in active early development. Expect the design to evolve quickly.
 
 ## License
 
