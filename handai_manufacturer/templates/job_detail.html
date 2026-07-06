@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job {{ job.id }} — HandAIManufacturer</title>
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>HandAIManufacturer</h1>
+        <p>Job detail</p>
+      </div>
+      <span class="version-badge">v{{ app_version }}</span>
+    </header>
+
+    <main class="single-column">
+      <section class="card">
+        <p><a href="/">← Back to dashboard</a></p>
+        <h2>{{ job.label }}</h2>
+        <dl>
+          <dt>Job ID</dt>
+          <dd><code>{{ job.id }}</code></dd>
+          <dt>Kind</dt>
+          <dd>{{ job.kind }}</dd>
+          <dt>Status</dt>
+          <dd><strong>{{ job.status }}</strong></dd>
+          <dt>Created</dt>
+          <dd>{{ job.created_at }}</dd>
+          <dt>Job path</dt>
+          <dd><code>{{ job.path }}</code></dd>
+        </dl>
+
+        {% if summary and summary.startable_filename %}
+          <div class="button-row">
+            <a class="button-link" href="/?job_id={{ job.id }}">Use this job on dashboard</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>Summary</h2>
+        <dl>
+          <dt>Source STL</dt>
+          <dd>{{ summary.source_stl|default('—', true) }}</dd>
+          <dt>Generated G-code</dt>
+          <dd>{{ summary.generated_gcode|default('—', true) }}</dd>
+          <dt>Printer destination</dt>
+          <dd>{{ summary.remote_name|default('—', true) }}</dd>
+          <dt>Startable filename</dt>
+          <dd>{{ summary.startable_filename|default('—', true) }}</dd>
+          <dt>Events</dt>
+          <dd>{{ summary.events_count }}</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <h2>Artifacts</h2>
+        <pre>{{ artifacts_json }}</pre>
+      </section>
+
+      <section class="card">
+        <h2>Metadata</h2>
+        <pre>{{ metadata_json }}</pre>
+      </section>
+
+      <section class="card">
+        <h2>Events</h2>
+        <pre>{{ events_json }}</pre>
+      </section>
+    </main>
+  </body>
+</html>
