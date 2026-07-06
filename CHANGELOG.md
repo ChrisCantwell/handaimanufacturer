@@ -15,6 +15,15 @@ This project follows a practical changelog style: concise release notes, plus en
 - Moonraker adapter for status, file listing, G-code upload, and start/pause/resume/cancel methods.
 - OrcaSlicer CLI adapter for STL slicing attempts with stdout/stderr capture.
 - Explicit print-start confirmation route.
+- Visible success/warning/error notices after slice, upload, duplicate block, and print-start requests.
+- Duplicate filename detection before uploading G-code to the printer.
+- Overwrite confirmation checkbox for sliced uploads and existing G-code uploads.
+- Printer-file selection controls that populate the Start Print filename field without copy/paste.
+
+### Changed
+
+- Upload routes now block possible overwrites unless the operator explicitly confirms overwrite.
+- Printer G-code file list now includes a selection column for Start Print workflow.
 
 ### Known limitations
 
