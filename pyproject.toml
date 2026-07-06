@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "handai-manufacturer"
+version = "0.1.0"
+description = "Local-first 3D print dock for OrcaSlicer and Moonraker workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Christopher Cantwell" }
+]
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "jinja2>=3.1",
+  "python-multipart>=0.0.9",
+  "PyYAML>=6.0",
+  "requests>=2.31"
+]
+
+[project.scripts]
+handai-manufacturer = "handai_manufacturer.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["handai_manufacturer"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
