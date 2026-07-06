@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
+from urllib.parse import urlencode
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -11,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from handai_manufacturer.config import load_config
-from handai_manufacturer.jobs import JobManager
+from handai_manufacturer.jobs import JobManager, JobRecord
 from handai_manufacturer.logging_setup import configure_logging
 from handai_manufacturer.printers.moonraker import MoonrakerClient, MoonrakerError
 from handai_manufacturer.slicers.orca import OrcaSlicerError, result_to_metadata, slice_stl
@@ -20,6 +21,49 @@ LOGGER = logging.getLogger(__name__)
 
 PACKAGE_DIR = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(PACKAGE_DIR / "templates"))
+
+
+def notice_redirect(message: str, level: str = "success") -> RedirectResponse:
+    query = urlencode({"notice": message, "notice_level": level})
+    return RedirectResponse(url=f"/?{query}", status_code=303)
+
+
+def _printer_file_paths(printer: MoonrakerClient) -> list[str]:
+    files = printer.list_gcodes()
+    paths: list[str] = []
+    for item in files:
+        if isinstance(item, dict) and item.get("path"):
+            paths.append(str(item["path"]))
+    return paths
+
+
+def _matching_printer_files(printer: MoonrakerClient, remote_name: str) -> list[str]:
+    remote_basename = Path(remote_name).name
+    matches: list[str] = []
+    for path in _printer_file_paths(printer):
+        if path == remote_name or Path(path).name == remote_basename:
+            matches.append(path)
+    return matches
+
+
+def _record_duplicate_block(job_manager: JobManager, job: JobRecord, remote_name: str, matches: list[str]) -> None:
+    job.status = "upload_blocked_duplicate"
+    job_manager.add_event(
+        job,
+        "upload_blocked_duplicate",
+        {"remote_name": remote_name, "matches": matches},
+    )
+    job_manager.save(job)
+
+
+def _duplicate_message(remote_name: str, matches: list[str]) -> str:
+    preview = ", ".join(matches[:3])
+    if len(matches) > 3:
+        preview += f", plus {len(matches) - 3} more"
+    return (
+        f"Upload blocked: '{remote_name}' appears to already exist on the printer "
+        f"as {preview}. Check the overwrite box if you want to replace it."
+    )
 
 
 def create_app() -> FastAPI:
@@ -47,7 +91,7 @@ def create_app() -> FastAPI:
     def index(request: Request) -> HTMLResponse:
         status = app.state.printer.status()
         jobs = app.state.jobs.recent(limit=10)
-        gcodes = []
+        gcodes: list[dict[str, Any]] = []
         gcode_error = None
         try:
             gcodes = app.state.printer.list_gcodes()
@@ -63,6 +107,8 @@ def create_app() -> FastAPI:
                 "jobs": jobs,
                 "gcodes": gcodes[:20] if isinstance(gcodes, list) else [],
                 "gcode_error": gcode_error,
+                "notice": request.query_params.get("notice"),
+                "notice_level": request.query_params.get("notice_level", "info"),
             },
         )
 
@@ -71,6 +117,7 @@ def create_app() -> FastAPI:
         stl_file: Annotated[UploadFile, File()],
         profile_id: Annotated[str | None, Form()] = None,
         upload_to_printer: Annotated[bool, Form()] = False,
+        overwrite_confirmed: Annotated[bool, Form()] = False,
     ) -> RedirectResponse:
         if not stl_file.filename or not stl_file.filename.lower().endswith(".stl"):
             raise HTTPException(status_code=400, detail="Upload must be an .stl file.")
@@ -90,33 +137,84 @@ def create_app() -> FastAPI:
             job.status = "sliced" if result.ok else "slice_failed"
             app.state.jobs.add_event(job, "slice_finished", job.metadata["slice"])
 
+            if not result.ok:
+                app.state.jobs.save(job)
+                return notice_redirect(
+                    f"Slice failed for '{stl_file.filename}'. Logs were saved in job {job.id}.",
+                    "error",
+                )
+
             if upload_to_printer and result.gcode_file:
+                remote_name = result.gcode_file.name
+                try:
+                    matches = _matching_printer_files(app.state.printer, remote_name)
+                except Exception as exc:  # noqa: BLE001 - safest behavior is no upload unless confirmed
+                    app.state.jobs.add_event(
+                        job,
+                        "duplicate_check_failed",
+                        {"remote_name": remote_name, "error": str(exc)},
+                    )
+                    if not overwrite_confirmed:
+                        job.status = "upload_blocked_duplicate_check_failed"
+                        app.state.jobs.save(job)
+                        return notice_redirect(
+                            f"Sliced '{stl_file.filename}', but upload was blocked because printer files could not be checked for duplicates: {exc}",
+                            "warning",
+                        )
+                    matches = []
+
+                if matches and not overwrite_confirmed:
+                    _record_duplicate_block(app.state.jobs, job, remote_name, matches)
+                    return notice_redirect(_duplicate_message(remote_name, matches), "warning")
+
                 upload_result = app.state.printer.upload_gcode(result.gcode_file, start_print=False)
                 job.metadata["moonraker_upload"] = upload_result
                 job.status = "uploaded"
                 app.state.jobs.add_event(
                     job,
                     "gcode_uploaded",
-                    {"gcode_file": str(result.gcode_file), "start_print": False},
+                    {
+                        "gcode_file": str(result.gcode_file),
+                        "remote_name": remote_name,
+                        "start_print": False,
+                        "overwrite_confirmed": overwrite_confirmed,
+                        "previous_matches": matches,
+                    },
                 )
-            elif upload_to_printer and not result.gcode_file:
+                app.state.jobs.save(job)
+                if matches:
+                    return notice_redirect(
+                        f"Sliced and uploaded '{remote_name}' to the printer after overwrite confirmation.",
+                        "success",
+                    )
+                return notice_redirect(f"Sliced and uploaded '{remote_name}' to the printer.", "success")
+
+            if upload_to_printer and not result.gcode_file:
                 app.state.jobs.add_event(
                     job,
                     "upload_skipped",
                     {"reason": "Slicer did not produce a plain .gcode file."},
                 )
+                job.status = "sliced_no_uploadable_gcode"
+                app.state.jobs.save(job)
+                return notice_redirect(
+                    f"Sliced '{stl_file.filename}', but no plain .gcode file was found to upload.",
+                    "warning",
+                )
+
+            app.state.jobs.save(job)
+            return notice_redirect(f"Sliced '{stl_file.filename}'.", "success")
         except (OrcaSlicerError, MoonrakerError, TimeoutError, OSError) as exc:
             LOGGER.exception("Slice/upload job failed")
             job.status = "failed"
             app.state.jobs.add_event(job, "error", {"message": str(exc)})
-        finally:
             app.state.jobs.save(job)
-
-        return RedirectResponse(url="/", status_code=303)
+            return notice_redirect(f"Slice/upload failed for '{stl_file.filename}': {exc}", "error")
 
     @app.post("/upload-gcode")
     async def upload_gcode_route(
         gcode_file: Annotated[UploadFile, File()],
+        overwrite_confirmed: Annotated[bool, Form()] = False,
     ) -> RedirectResponse:
         if not gcode_file.filename or not gcode_file.filename.lower().endswith(".gcode"):
             raise HTTPException(status_code=400, detail="Upload must be a .gcode file.")
@@ -130,18 +228,54 @@ def create_app() -> FastAPI:
         app.state.jobs.add_event(job, "gcode_uploaded_to_app", {"filename": gcode_file.filename})
 
         try:
+            remote_name = local_path.name
+            try:
+                matches = _matching_printer_files(app.state.printer, remote_name)
+            except Exception as exc:  # noqa: BLE001 - safest behavior is no upload unless confirmed
+                app.state.jobs.add_event(
+                    job,
+                    "duplicate_check_failed",
+                    {"remote_name": remote_name, "error": str(exc)},
+                )
+                if not overwrite_confirmed:
+                    job.status = "upload_blocked_duplicate_check_failed"
+                    app.state.jobs.save(job)
+                    return notice_redirect(
+                        f"Upload blocked because printer files could not be checked for duplicates: {exc}",
+                        "warning",
+                    )
+                matches = []
+
+            if matches and not overwrite_confirmed:
+                _record_duplicate_block(app.state.jobs, job, remote_name, matches)
+                return notice_redirect(_duplicate_message(remote_name, matches), "warning")
+
             upload_result = app.state.printer.upload_gcode(local_path, start_print=False)
             job.metadata["moonraker_upload"] = upload_result
             job.status = "uploaded"
-            app.state.jobs.add_event(job, "gcode_uploaded_to_printer", {"start_print": False})
+            app.state.jobs.add_event(
+                job,
+                "gcode_uploaded_to_printer",
+                {
+                    "remote_name": remote_name,
+                    "start_print": False,
+                    "overwrite_confirmed": overwrite_confirmed,
+                    "previous_matches": matches,
+                },
+            )
+            app.state.jobs.save(job)
+            if matches:
+                return notice_redirect(
+                    f"Uploaded '{remote_name}' to the printer after overwrite confirmation.",
+                    "success",
+                )
+            return notice_redirect(f"Uploaded '{remote_name}' to the printer.", "success")
         except (MoonrakerError, OSError) as exc:
             LOGGER.exception("G-code upload failed")
             job.status = "failed"
             app.state.jobs.add_event(job, "error", {"message": str(exc)})
-        finally:
             app.state.jobs.save(job)
-
-        return RedirectResponse(url="/", status_code=303)
+            return notice_redirect(f"G-code upload failed for '{gcode_file.filename}': {exc}", "error")
 
     @app.post("/start-print")
     async def start_print_route(
@@ -159,6 +293,6 @@ def create_app() -> FastAPI:
             app.state.printer.start_print(filename)
         except MoonrakerError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return RedirectResponse(url="/", status_code=303)
+        return notice_redirect(f"Print start requested for '{filename}'.", "success")
 
     return app
