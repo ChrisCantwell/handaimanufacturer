@@ -24,6 +24,33 @@ header p {
   opacity: 0.85;
 }
 
+.notice {
+  border-left: 0.5rem solid #777;
+  font-weight: 650;
+  margin: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.notice-success {
+  background: #ecf8ed;
+  border-color: #247a24;
+}
+
+.notice-warning {
+  background: #fff6d8;
+  border-color: #d6a100;
+}
+
+.notice-error {
+  background: #ffe9e9;
+  border-color: #a32121;
+}
+
+.notice-info {
+  background: #eceff8;
+  border-color: #445b9f;
+}
+
 main {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -54,7 +81,8 @@ label {
 }
 
 input[type="file"],
-input[type="text"] {
+input[type="text"],
+select {
   box-sizing: border-box;
   display: block;
   font: inherit;
@@ -72,6 +100,13 @@ input[type="text"] {
 
 .checkbox input {
   margin-top: 0.2rem;
+}
+
+.caution-option {
+  background: #fff9e7;
+  border: 1px solid #ead38a;
+  border-radius: 8px;
+  padding: 0.55rem;
 }
 
 button {
@@ -156,4 +191,34 @@ td {
 
 td {
   overflow-wrap: anywhere;
+}
+
+.printer-files-card {
+  grid-column: span 2;
+}
+
+.printer-files-table th:first-child,
+.printer-files-table td:first-child {
+  text-align: center;
+  width: 4rem;
+}
+
+.printer-files-table input[type="radio"] {
+  cursor: pointer;
+}
+
+.file-path code {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.file-size {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .printer-files-card {
+    grid-column: span 1;
+  }
 }
