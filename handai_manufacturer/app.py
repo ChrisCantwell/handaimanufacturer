@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from handai_manufacturer.config import Config, load_config
+from handai_manufacturer.config import load_config
 from handai_manufacturer.jobs import JobManager
 from handai_manufacturer.logging_setup import configure_logging
 from handai_manufacturer.printers.moonraker import MoonrakerClient, MoonrakerError
@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="HandAIManufacturer", version="0.1.0")
     app.state.config = config
     app.state.jobs = JobManager(config.data_dir)
-    app.state.printer = MoonrakerClient(config)
+    app.state.printer = MoonrakerClient(config.printer)
 
     static_dir = PACKAGE_DIR / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
