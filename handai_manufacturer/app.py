@@ -55,9 +55,9 @@ def create_app() -> FastAPI:
             gcode_error = str(exc)
 
         return TEMPLATES.TemplateResponse(
+            request,
             "index.html",
             {
-                "request": request,
                 "config": config,
                 "printer_status": status,
                 "jobs": jobs,
